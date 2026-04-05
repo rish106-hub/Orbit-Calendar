@@ -15,6 +15,7 @@ struct UserProfile: Codable {
     let displayName: String?
     let defaultTimezone: String
     let mode: String
+    let calendarProvider: String
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -22,6 +23,7 @@ struct UserProfile: Codable {
         case displayName = "display_name"
         case defaultTimezone = "default_timezone"
         case mode
+        case calendarProvider = "calendar_provider"
     }
 }
 

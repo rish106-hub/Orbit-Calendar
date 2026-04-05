@@ -9,3 +9,4 @@ class MeResponse(BaseModel):
     display_name: str | None
     default_timezone: str
     mode: str
+    calendar_provider: str

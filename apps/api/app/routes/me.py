@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.deps import get_db, get_or_create_dev_user
 from app.schemas.user import MeResponse
 
@@ -16,4 +17,5 @@ def get_me(db: Session = Depends(get_db)) -> MeResponse:
         display_name=user.display_name,
         default_timezone=user.default_timezone,
         mode="development",
+        calendar_provider=settings.calendar_provider,
     )
