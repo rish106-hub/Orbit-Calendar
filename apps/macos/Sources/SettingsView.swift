@@ -7,6 +7,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Settings")
                 .font(.system(size: 30, weight: .semibold, design: .serif))
+                .foregroundStyle(OrbitTheme.textPrimary)
 
             if let profile = appState.profile {
                 HStack(alignment: .top, spacing: 20) {
@@ -24,12 +25,13 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Provider")
                             .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundStyle(OrbitTheme.textPrimary)
                         Text("Routes already talk through a provider seam. `local` is active now, and `google` can replace it later without changing the macOS client contract.")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(OrbitTheme.textSecondary)
                     }
                     .padding(22)
                     .frame(maxWidth: 320, alignment: .topLeading)
-                    .background(Color.white.opacity(0.62), in: RoundedRectangle(cornerRadius: 24))
+                    .orbitGlassCard(radius: 24, fill: OrbitTheme.panelStrong)
                 }
             } else {
                 ProgressView()
@@ -37,15 +39,16 @@ struct SettingsView: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .orbitGlassCard(radius: 30, fill: OrbitTheme.panelFill)
     }
 
     private func settingsRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrbitTheme.textSecondary)
             Spacer()
             Text(value)
+                .foregroundStyle(OrbitTheme.textPrimary)
         }
     }
 }

@@ -11,15 +11,7 @@ struct RootView: View {
             ))
         } detail: {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.95, green: 0.95, blue: 0.92),
-                        Color(red: 0.90, green: 0.91, blue: 0.86),
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                backgroundLayer
 
                 Group {
                     switch appState.selectedSection {
@@ -64,5 +56,70 @@ struct RootView: View {
         )) {
             AgentConfirmationView()
         }
+        .preferredColorScheme(.dark)
+    }
+
+    private var backgroundLayer: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    OrbitTheme.backgroundTop,
+                    OrbitTheme.backgroundMid,
+                    OrbitTheme.backgroundBottom,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            RadialGradient(
+                colors: [
+                    OrbitTheme.glowA.opacity(0.46),
+                    Color.clear,
+                ],
+                center: .topLeading,
+                startRadius: 40,
+                endRadius: 420
+            )
+            .offset(x: -80, y: -80)
+
+            RadialGradient(
+                colors: [
+                    OrbitTheme.glowB.opacity(0.32),
+                    Color.clear,
+                ],
+                center: .trailing,
+                startRadius: 30,
+                endRadius: 360
+            )
+            .offset(x: 120, y: 10)
+
+            RadialGradient(
+                colors: [
+                    OrbitTheme.glowC.opacity(0.18),
+                    Color.clear,
+                ],
+                center: .bottomLeading,
+                startRadius: 20,
+                endRadius: 300
+            )
+            .offset(x: -140, y: 180)
+
+            GeometryReader { geometry in
+                Path { path in
+                    let width = geometry.size.width
+                    let height = geometry.size.height
+                    stride(from: 0.0, through: width, by: 56).forEach { x in
+                        path.move(to: CGPoint(x: x, y: 0))
+                        path.addLine(to: CGPoint(x: x, y: height))
+                    }
+                    stride(from: 0.0, through: height, by: 56).forEach { y in
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: width, y: y))
+                    }
+                }
+                .stroke(Color.white.opacity(0.035), lineWidth: 1)
+            }
+        }
+        .ignoresSafeArea()
     }
 }

@@ -9,8 +9,9 @@ struct BookingSettingsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Booking Link")
                         .font(.system(size: 30, weight: .semibold, design: .serif))
+                        .foregroundStyle(OrbitTheme.textPrimary)
                     Text("One public link for the MVP, with buffers and notice controls.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrbitTheme.textSecondary)
                 }
                 Spacer()
                 if let bookingPage = appState.bookingPage {
@@ -18,7 +19,9 @@ struct BookingSettingsView: View {
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.58), in: Capsule())
+                        .foregroundStyle(OrbitTheme.textPrimary)
+                        .background(Color.white.opacity(0.12), in: Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
                 }
             }
 
@@ -34,16 +37,22 @@ struct BookingSettingsView: View {
                         Stepper("Minimum notice: \(bookingPage.minimumNoticeMinutes) min", value: binding(\.minimumNoticeMinutes), in: 0...10080, step: 15)
                     }
                     .formStyle(.grouped)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Preview")
                             .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundStyle(OrbitTheme.textPrimary)
                         Text(bookingPage.title)
                             .font(.system(size: 28, weight: .semibold, design: .serif))
+                            .foregroundStyle(OrbitTheme.textPrimary)
                         Text("30-second booking should feel predictable and low-friction.")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(OrbitTheme.textSecondary)
 
-                        Divider()
+                        Rectangle()
+                            .fill(OrbitTheme.divider)
+                            .frame(height: 1)
 
                         previewRow("Slug", bookingPage.slug)
                         previewRow("Duration", "\(bookingPage.defaultDurationMinutes) min")
@@ -55,12 +64,12 @@ struct BookingSettingsView: View {
                     }
                     .padding(22)
                     .frame(maxWidth: 320, maxHeight: .infinity, alignment: .topLeading)
-                    .background(Color.white.opacity(0.62), in: RoundedRectangle(cornerRadius: 24))
+                    .orbitGlassCard(radius: 24, fill: OrbitTheme.panelStrong)
                 }
 
                 HStack {
                     Text("Public URL preview: orbit.app/\(bookingPage.slug)")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(OrbitTheme.textSecondary)
                     Spacer()
                     Button("Save") {
                         Task {
@@ -68,6 +77,7 @@ struct BookingSettingsView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(OrbitTheme.accentStrong)
                 }
             } else {
                 ProgressView()
@@ -75,7 +85,7 @@ struct BookingSettingsView: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .orbitGlassCard(radius: 30, fill: OrbitTheme.panelFill)
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<BookingPage, Value>) -> Binding<Value> {
@@ -88,9 +98,10 @@ struct BookingSettingsView: View {
     private func previewRow(_ label: String, _ value: String) -> some View {
         HStack {
             Text(label)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(OrbitTheme.textSecondary)
             Spacer()
             Text(value)
+                .foregroundStyle(OrbitTheme.textPrimary)
         }
     }
 }
