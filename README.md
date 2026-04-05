@@ -88,6 +88,35 @@ make api-dev
 - `make macos-build`: build the SwiftUI macOS app
 - `make api-dev`: start the FastAPI server
 - `make api-venv`: create the backend virtual environment and install dependencies
+- `make api-migrate`: run Alembic migrations against the configured PostgreSQL database
+
+## Database Setup
+
+The backend targets PostgreSQL for the MVP data layer.
+
+1. Copy `apps/api/.env.example` to `apps/api/.env`
+2. Update `DATABASE_URL`
+3. Create the virtual environment and install backend dependencies:
+
+```bash
+make api-venv
+```
+
+4. Apply the initial schema:
+
+```bash
+make api-migrate
+```
+
+The initial migration creates:
+
+- `users`
+- `google_accounts`
+- `calendars`
+- `synced_events`
+- `booking_pages`
+- `bookings`
+- `agent_runs`
 
 ## Current Scope
 

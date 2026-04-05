@@ -1,4 +1,4 @@
-.PHONY: macos-run macos-build api-venv api-dev
+.PHONY: macos-run macos-build api-venv api-dev api-migrate
 
 macos-run:
 	swift run --package-path apps/macos OrbitCalendarMac
@@ -11,3 +11,6 @@ api-venv:
 
 api-dev:
 	cd apps/api && . .venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+api-migrate:
+	cd apps/api && . .venv/bin/activate && alembic upgrade head
