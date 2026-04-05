@@ -6,6 +6,11 @@ Orbit Calendar is a narrow MVP for an AI-assisted calendar product with three co
 2. Read and modify calendar events through an AI action layer
 3. Share one booking link that writes bookings into Google Calendar
 
+Current implementation note:
+
+- OAuth is intentionally skipped for now.
+- The app runs in a single-user development mode and uses a local default user context so scheduling, agent, and booking flows can be built before Google auth is added.
+
 This repository is organized as a simple monorepo:
 
 - `apps/macos`: native SwiftUI macOS client
