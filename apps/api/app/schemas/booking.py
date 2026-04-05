@@ -3,6 +3,8 @@ import uuid
 
 from pydantic import BaseModel, Field
 
+from app.schemas.common import APIModel
+
 
 class BookingPageUpdate(BaseModel):
     slug: str = Field(min_length=3)
@@ -17,7 +19,7 @@ class BookingPageUpdate(BaseModel):
     minimum_notice_minutes: int = Field(ge=0, le=10080)
 
 
-class BookingPageOut(BookingPageUpdate):
+class BookingPageOut(APIModel, BookingPageUpdate):
     id: uuid.UUID
     user_id: uuid.UUID
 
