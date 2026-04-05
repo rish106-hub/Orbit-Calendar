@@ -3,7 +3,8 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.deps import get_db, get_or_create_dev_user
+from app.deps import get_current_user, get_db
+from app.models.user import User
 from app.schemas.booking import (
     AvailabilityResponse,
     AvailabilitySlot,
@@ -19,15 +20,20 @@ router = APIRouter(tags=["booking"])
 
 
 @router.get("/booking-page", response_model=BookingPageOut)
-def get_booking_page(db: Session = Depends(get_db)) -> BookingPageOut:
-    user = get_or_create_dev_user(db)
+def get_booking_page(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> BookingPageOut:
     page = booking_service.get_or_create_booking_page(db, user)
     return BookingPageOut.model_validate(page)
 
 
 @router.put("/booking-page", response_model=BookingPageOut)
-def update_booking_page(payload: BookingPageUpdate, db: Session = Depends(get_db)) -> BookingPageOut:
-    user = get_or_create_dev_user(db)
+def update_booking_page(
+    payload: BookingPageUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> BookingPageOut:
     page = booking_service.get_or_create_booking_page(db, user)
     updated = booking_service.update_booking_page(db, page, payload)
     return BookingPageOut.model_validate(updated)
@@ -35,10 +41,10 @@ def update_booking_page(payload: BookingPageUpdate, db: Session = Depends(get_db
 
 @router.get("/public/booking-pages/{slug}", response_model=PublicBookingPageOut)
 def get_public_booking_page(slug: str, db: Session = Depends(get_db)) -> PublicBookingPageOut:
-    user = get_or_create_dev_user(db)
-    page = booking_service.get_or_create_booking_page(db, user)
-    if page.slug != slug:
+    page = booking_service.get_booking_page_by_slug(db, slug)
+    if page is None:
         raise HTTPException(status_code=404, detail="Booking page not found")
+    user = page.user
     return PublicBookingPageOut(
         slug=page.slug,
         title=page.title,
@@ -57,10 +63,10 @@ def get_public_availability(
     visitor_timezone: str = Query(),
     db: Session = Depends(get_db),
 ) -> AvailabilityResponse:
-    user = get_or_create_dev_user(db)
-    page = booking_service.get_or_create_booking_page(db, user)
-    if page.slug != slug:
+    page = booking_service.get_booking_page_by_slug(db, slug)
+    if page is None:
         raise HTTPException(status_code=404, detail="Booking page not found")
+    user = page.user
     slots = booking_service.compute_availability(
         db,
         user,
@@ -81,10 +87,10 @@ def create_public_booking(
     payload: BookingCreateRequest,
     db: Session = Depends(get_db),
 ) -> BookingCreateResponse:
-    user = get_or_create_dev_user(db)
-    page = booking_service.get_or_create_booking_page(db, user)
-    if page.slug != slug:
+    page = booking_service.get_booking_page_by_slug(db, slug)
+    if page is None:
         raise HTTPException(status_code=404, detail="Booking page not found")
+    user = page.user
     try:
         booking = booking_service.create_booking(
             db,

@@ -9,7 +9,7 @@ Orbit Calendar is a narrow MVP for an AI-assisted calendar product with three co
 Current implementation note:
 
 - OAuth is intentionally skipped for now.
-- The app runs in a single-user development mode and uses a local default user context so scheduling, agent, and booking flows can be built before Google auth is added.
+- The app uses local email/password auth with backend-issued bearer sessions.
 
 This repository is organized as a simple monorepo:
 
@@ -130,3 +130,24 @@ This scaffold intentionally does not implement product logic yet. It only establ
 - `docs/01-mvp-screens-and-flows.md`
 - `docs/02-backend-schema-and-tool-contracts.md`
 - `docs/03-codex-build-prompts.md`
+## Local Auth
+
+The current app flow uses local auth endpoints:
+
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+
+Sign up in the macOS client first, then the protected calendar, agent, and booking settings flows unlock automatically.
+
+## Package as DMG
+
+To create an unsigned local `.dmg`:
+
+```bash
+./scripts/package_macos_app.sh
+```
+
+Output:
+
+- `apps/macos/dist/Orbit-Calendar.dmg`

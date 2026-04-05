@@ -28,6 +28,13 @@ struct SettingsView: View {
                             .foregroundStyle(OrbitTheme.textPrimary)
                         Text("Routes already talk through a provider seam. `local` is active now, and `google` can replace it later without changing the macOS client contract.")
                             .foregroundStyle(OrbitTheme.textSecondary)
+                        Button("Log Out") {
+                            Task {
+                                await appState.logout()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(OrbitTheme.accentStrong)
                     }
                     .padding(22)
                     .frame(maxWidth: 320, alignment: .topLeading)

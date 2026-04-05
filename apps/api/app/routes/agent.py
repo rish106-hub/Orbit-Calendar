@@ -3,7 +3,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.deps import get_db, get_or_create_dev_user
+from app.deps import get_current_user, get_db
+from app.models.user import User
 from app.schemas.agent import AgentExecuteRequest, AgentQueryRequest, AgentQueryResponse
 from app.services import agent_service, calendar_service
 
@@ -11,14 +12,20 @@ router = APIRouter(prefix="/agent", tags=["agent"])
 
 
 @router.post("/query", response_model=AgentQueryResponse)
-def query_agent(payload: AgentQueryRequest, db: Session = Depends(get_db)) -> AgentQueryResponse:
-    user = get_or_create_dev_user(db)
+def query_agent(
+    payload: AgentQueryRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> AgentQueryResponse:
     return agent_service.handle_query(db, user, payload.text)
 
 
 @router.post("/execute")
-def execute_action(payload: AgentExecuteRequest, db: Session = Depends(get_db)) -> dict:
-    user = get_or_create_dev_user(db)
+def execute_action(
+    payload: AgentExecuteRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
 
     if payload.tool_name == "calendar_create_event":
         event = calendar_service.create_event(

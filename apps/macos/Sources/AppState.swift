@@ -9,6 +9,11 @@ enum AppSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum AuthMode: String {
+    case login
+    case signup
+}
+
 struct UserProfile: Codable {
     let id: UUID
     let email: String
@@ -141,6 +146,11 @@ struct SyncResponse: Codable {
     }
 }
 
+struct AuthResponse: Codable {
+    let token: String
+    let user: UserProfile
+}
+
 @MainActor
 @Observable
 final class AppState {
@@ -154,38 +164,48 @@ final class AppState {
     var pendingAction: ProposedAction?
     var isLoading = false
     var errorMessage: String?
+    var authMode: AuthMode = .login
+    var authEmail = ""
+    var authPassword = ""
+    var authDisplayName = ""
+    var authTimezone = TimeZone.current.identifier
+    var authToken: String?
 
     private let apiClient: APIClient
+    private let authStorageKey = "orbit_auth_token"
 
     init(apiBaseURL: URL = URL(string: "http://localhost:8000")!) {
         self.apiBaseURL = apiBaseURL
         self.apiClient = APIClient(baseURL: apiBaseURL)
+        self.authToken = UserDefaults.standard.string(forKey: authStorageKey)
     }
 
     func bootstrap() async {
-        guard profile == nil else { return }
+        guard profile == nil, let token = authToken else { return }
 
         isLoading = true
         defer { isLoading = false }
 
         do {
-            async let me = apiClient.fetchMe()
-            async let sync = apiClient.syncSampleCalendar()
+            async let me = apiClient.fetchMe(token: token)
+            async let sync = apiClient.syncSampleCalendar(token: token)
             _ = try await sync
             profile = try await me
-            try await refreshEvents()
-            bookingPage = try await apiClient.fetchBookingPage()
+            try await refreshEvents(token: token)
+            bookingPage = try await apiClient.fetchBookingPage(token: token)
         } catch {
+            clearSession()
             errorMessage = error.localizedDescription
         }
     }
 
-    func refreshEvents() async throws {
+    func refreshEvents(token: String? = nil) async throws {
+        let resolvedToken = try requireToken(token)
         let calendar = Calendar.current
         let now = Date()
         let start = calendar.startOfDay(for: now)
         let end = calendar.date(byAdding: .day, value: 7, to: start) ?? now
-        let response = try await apiClient.fetchEvents(start: start, end: end)
+        let response = try await apiClient.fetchEvents(start: start, end: end, token: resolvedToken)
         events = response.events.sorted(by: { $0.startsAt < $1.startsAt })
     }
 
@@ -197,7 +217,7 @@ final class AppState {
         defer { isLoading = false }
 
         do {
-            let response = try await apiClient.queryAgent(text: text)
+            let response = try await apiClient.queryAgent(text: text, token: try requireToken())
             latestAgentResponse = response
             pendingAction = response.requiresConfirmation ? response.proposedAction : nil
             if response.intent == "open_booking_settings" {
@@ -215,7 +235,11 @@ final class AppState {
         defer { isLoading = false }
 
         do {
-            try await apiClient.executeAction(toolName: pendingAction.toolName, arguments: pendingAction.arguments)
+            try await apiClient.executeAction(
+                toolName: pendingAction.toolName,
+                arguments: pendingAction.arguments,
+                token: try requireToken()
+            )
             self.pendingAction = nil
             latestAgentResponse = nil
             try await refreshEvents()
@@ -231,9 +255,69 @@ final class AppState {
         defer { isLoading = false }
 
         do {
-            self.bookingPage = try await apiClient.updateBookingPage(bookingPage)
+            self.bookingPage = try await apiClient.updateBookingPage(bookingPage, token: try requireToken())
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func submitAuth() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let response: AuthResponse
+            switch authMode {
+            case .login:
+                response = try await apiClient.login(email: authEmail, password: authPassword)
+            case .signup:
+                response = try await apiClient.signup(
+                    email: authEmail,
+                    password: authPassword,
+                    displayName: authDisplayName,
+                    defaultTimezone: authTimezone
+                )
+            }
+
+            authToken = response.token
+            UserDefaults.standard.set(response.token, forKey: authStorageKey)
+            profile = response.user
+            _ = try await apiClient.syncSampleCalendar(token: response.token)
+            try await refreshEvents(token: response.token)
+            bookingPage = try await apiClient.fetchBookingPage(token: response.token)
+            authPassword = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func logout() async {
+        guard let token = authToken else { return }
+        do {
+            try await apiClient.logout(token: token)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        clearSession()
+    }
+
+    private func clearSession() {
+        authToken = nil
+        profile = nil
+        events = []
+        bookingPage = nil
+        latestAgentResponse = nil
+        pendingAction = nil
+        UserDefaults.standard.removeObject(forKey: authStorageKey)
+    }
+
+    private func requireToken(_ token: String? = nil) throws -> String {
+        if let token {
+            return token
+        }
+        if let authToken {
+            return authToken
+        }
+        throw APIError.serverError("Please log in first.")
     }
 }

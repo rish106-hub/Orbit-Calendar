@@ -8,3 +8,6 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+*.dmg
+apps/macos/.swiftpm/
+apps/macos/dist/

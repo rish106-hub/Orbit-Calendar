@@ -4,26 +4,36 @@ struct RootView: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        NavigationSplitView {
-            SidebarView(selection: Binding(
-                get: { appState.selectedSection },
-                set: { appState.selectedSection = $0 }
-            ))
-        } detail: {
-            ZStack {
-                backgroundLayer
+        ZStack {
+            backgroundLayer
 
-                Group {
-                    switch appState.selectedSection {
-                    case .calendar:
-                        CalendarWorkspaceView()
-                    case .booking:
-                        BookingSettingsView()
-                    case .settings:
-                        SettingsView()
+            if appState.profile == nil {
+                AuthView()
+                    .padding(20)
+            } else {
+                HStack(spacing: 18) {
+                    SidebarView(
+                        selection: Binding(
+                            get: { appState.selectedSection },
+                            set: { appState.selectedSection = $0 }
+                        )
+                    )
+                    .frame(width: 248)
+                    .orbitGlassCard(radius: 30, fill: OrbitTheme.panelFill)
+
+                    Group {
+                        switch appState.selectedSection {
+                        case .calendar:
+                            CalendarWorkspaceView()
+                        case .booking:
+                            BookingSettingsView()
+                        case .settings:
+                            SettingsView()
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(24)
+                .padding(20)
             }
         }
         .task {

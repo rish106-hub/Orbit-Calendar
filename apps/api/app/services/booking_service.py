@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+import re
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -13,13 +14,28 @@ from app.services import calendar_service
 from app.services.scheduling_service import Slot, find_free_slots
 
 
+def _slugify(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return normalized or "orbit-user"
+
+
+def _unique_default_slug(db: Session, user: User) -> str:
+    base = _slugify((user.display_name or user.email.split("@", 1)[0]))
+    candidate = base
+    suffix = 1
+    while get_booking_page_by_slug(db, candidate) is not None:
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
+
+
 def get_or_create_booking_page(db: Session, user: User) -> BookingPage:
     statement = select(BookingPage).where(BookingPage.user_id == user.id)
     page = db.scalar(statement)
     if page is None:
         page = BookingPage(
             user_id=user.id,
-            slug="orbit-dev",
+            slug=_unique_default_slug(db, user),
             title="Orbit Intro Meeting",
             active=True,
             default_duration_minutes=30,
@@ -34,6 +50,11 @@ def get_or_create_booking_page(db: Session, user: User) -> BookingPage:
         db.commit()
         db.refresh(page)
     return page
+
+
+def get_booking_page_by_slug(db: Session, slug: str) -> BookingPage | None:
+    statement = select(BookingPage).where(BookingPage.slug == slug)
+    return db.scalar(statement)
 
 
 def update_booking_page(db: Session, page: BookingPage, payload: BookingPageUpdate) -> BookingPage:

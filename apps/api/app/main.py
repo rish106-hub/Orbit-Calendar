@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.routes.auth import router as auth_router
 from app.routes.agent import router as agent_router
 from app.routes.booking import router as booking_router
 from app.routes.calendar import router as calendar_router
@@ -17,6 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api")
 app.include_router(me_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")

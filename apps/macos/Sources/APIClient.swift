@@ -28,10 +28,14 @@ struct APIClient {
     }
 
     func fetchMe() async throws -> UserProfile {
-        try await request(path: "/api/me", method: "GET")
+        fatalError("Use fetchMe(token:) instead")
     }
 
-    func syncSampleCalendar() async throws -> SyncResponse {
+    func fetchMe(token: String) async throws -> UserProfile {
+        try await request(path: "/api/me", method: "GET", token: token)
+    }
+
+    func syncSampleCalendar(token: String) async throws -> SyncResponse {
         let calendar = Calendar.current
         let now = Date()
         let start = calendar.startOfDay(for: now)
@@ -40,10 +44,10 @@ struct APIClient {
             "start": isoString(start),
             "end": isoString(end),
         ]
-        return try await request(path: "/api/calendar/sync", method: "POST", body: SyncRequestBody(start: body["start"]!, end: body["end"]!))
+        return try await request(path: "/api/calendar/sync", method: "POST", body: SyncRequestBody(start: body["start"]!, end: body["end"]!), token: token)
     }
 
-    func fetchEvents(start: Date, end: Date) async throws -> CalendarEventsResponse {
+    func fetchEvents(start: Date, end: Date, token: String) async throws -> CalendarEventsResponse {
         var components = URLComponents(url: baseURL.appending(path: "/api/calendar/events"), resolvingAgainstBaseURL: false)
         components?.queryItems = [
             URLQueryItem(name: "start", value: isoString(start)),
@@ -52,26 +56,27 @@ struct APIClient {
         guard let url = components?.url else {
             throw APIError.invalidResponse
         }
-        return try await request(url: url, method: "GET")
+        return try await request(url: url, method: "GET", token: token)
     }
 
-    func queryAgent(text: String) async throws -> AgentResponse {
-        try await request(path: "/api/agent/query", method: "POST", body: AgentQueryBody(text: text))
+    func queryAgent(text: String, token: String) async throws -> AgentResponse {
+        try await request(path: "/api/agent/query", method: "POST", body: AgentQueryBody(text: text), token: token)
     }
 
-    func executeAction(toolName: String, arguments: [String: String]) async throws {
+    func executeAction(toolName: String, arguments: [String: String], token: String) async throws {
         let _: EmptyResponse = try await request(
             path: "/api/agent/execute",
             method: "POST",
-            body: ExecuteActionBody(toolName: toolName, arguments: arguments)
+            body: ExecuteActionBody(toolName: toolName, arguments: arguments),
+            token: token
         )
     }
 
-    func fetchBookingPage() async throws -> BookingPage {
-        try await request(path: "/api/booking-page", method: "GET")
+    func fetchBookingPage(token: String) async throws -> BookingPage {
+        try await request(path: "/api/booking-page", method: "GET", token: token)
     }
 
-    func updateBookingPage(_ bookingPage: BookingPage) async throws -> BookingPage {
+    func updateBookingPage(_ bookingPage: BookingPage, token: String) async throws -> BookingPage {
         try await request(
             path: "/api/booking-page",
             method: "PUT",
@@ -86,16 +91,41 @@ struct APIClient {
                 bufferBeforeMinutes: bookingPage.bufferBeforeMinutes,
                 bufferAfterMinutes: bookingPage.bufferAfterMinutes,
                 minimumNoticeMinutes: bookingPage.minimumNoticeMinutes
-            )
+            ),
+            token: token
         )
+    }
+
+    func signup(email: String, password: String, displayName: String, defaultTimezone: String) async throws -> AuthResponse {
+        try await request(
+            path: "/api/auth/signup",
+            method: "POST",
+            body: SignUpBody(email: email, password: password, displayName: displayName, defaultTimezone: defaultTimezone)
+        )
+    }
+
+    func login(email: String, password: String) async throws -> AuthResponse {
+        try await request(path: "/api/auth/login", method: "POST", body: LoginBody(email: email, password: password))
+    }
+
+    func logout(token: String) async throws {
+        let _: EmptyResponse = try await request(path: "/api/auth/logout", method: "POST", token: token)
     }
 
     private func request<T: Decodable>(path: String, method: String) async throws -> T {
         try await request(url: baseURL.appending(path: path), method: method)
     }
 
+    private func request<T: Decodable>(path: String, method: String, token: String) async throws -> T {
+        try await request(url: baseURL.appending(path: path), method: method, token: token)
+    }
+
     private func request<T: Decodable, Body: Encodable>(path: String, method: String, body: Body? = nil) async throws -> T {
         try await request(url: baseURL.appending(path: path), method: method, body: body)
+    }
+
+    private func request<T: Decodable, Body: Encodable>(path: String, method: String, body: Body? = nil, token: String) async throws -> T {
+        try await request(url: baseURL.appending(path: path), method: method, body: body, token: token)
     }
 
     private func request<T: Decodable>(url: URL, method: String) async throws -> T {
@@ -116,10 +146,60 @@ struct APIClient {
         return try decoder.decode(T.self, from: data)
     }
 
+    private func request<T: Decodable>(url: URL, method: String, token: String) async throws -> T {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard (200..<300).contains(http.statusCode) else {
+            let message = String(data: data, encoding: .utf8) ?? "Request failed."
+            throw APIError.serverError(message)
+        }
+
+        if T.self == EmptyResponse.self {
+            return EmptyResponse() as! T
+        }
+
+        return try decoder.decode(T.self, from: data)
+    }
+
     private func request<T: Decodable, Body: Encodable>(url: URL, method: String, body: Body? = nil) async throws -> T {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let body {
+            request.httpBody = try encoder.encode(body)
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        guard (200..<300).contains(http.statusCode) else {
+            let message = String(data: data, encoding: .utf8) ?? "Request failed."
+            throw APIError.serverError(message)
+        }
+
+        if T.self == EmptyResponse.self {
+            return EmptyResponse() as! T
+        }
+
+        return try decoder.decode(T.self, from: data)
+    }
+
+    private func request<T: Decodable, Body: Encodable>(url: URL, method: String, body: Body? = nil, token: String) async throws -> T {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         if let body {
             request.httpBody = try encoder.encode(body)
@@ -192,4 +272,23 @@ private struct BookingPageUpdateBody: Encodable {
         case bufferAfterMinutes = "buffer_after_minutes"
         case minimumNoticeMinutes = "minimum_notice_minutes"
     }
+}
+
+private struct SignUpBody: Encodable {
+    let email: String
+    let password: String
+    let displayName: String
+    let defaultTimezone: String
+
+    private enum CodingKeys: String, CodingKey {
+        case email
+        case password
+        case displayName = "display_name"
+        case defaultTimezone = "default_timezone"
+    }
+}
+
+private struct LoginBody: Encodable {
+    let email: String
+    let password: String
 }
