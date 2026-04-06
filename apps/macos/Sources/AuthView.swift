@@ -38,6 +38,8 @@ struct AuthView: View {
                     .font(.system(size: 28, weight: .semibold, design: .serif))
                     .foregroundStyle(OrbitTheme.textPrimary)
 
+                authStatusBanner
+
                 field("Email", text: Binding(
                     get: { appState.authEmail },
                     set: { appState.authEmail = $0 }
@@ -72,6 +74,14 @@ struct AuthView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(OrbitTheme.accentStrong)
+                .disabled(appState.isLoading)
+
+                if let errorMessage = appState.errorMessage {
+                    Text(errorMessage)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(red: 1.0, green: 0.78, blue: 0.80))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .frame(width: 380)
             .padding(30)
@@ -96,6 +106,43 @@ struct AuthView: View {
                 .frame(width: 8, height: 8)
             Text(text)
                 .foregroundStyle(OrbitTheme.textSecondary)
+        }
+    }
+
+    @ViewBuilder
+    private var authStatusBanner: some View {
+        switch appState.authServiceState {
+        case .checking:
+            HStack(spacing: 10) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Checking account service...")
+                    .foregroundStyle(OrbitTheme.textSecondary)
+            }
+            .font(.system(size: 13, weight: .medium, design: .rounded))
+        case .ready:
+            Label("Account service is online", systemImage: "checkmark.circle.fill")
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(Color(red: 0.69, green: 0.90, blue: 1.0))
+        case .degraded(let message):
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Account service needs attention", systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.62))
+                Text(message)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(OrbitTheme.textSecondary)
+                Button("Retry Connection") {
+                    Task {
+                        await appState.refreshAuthServiceStatus()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .tint(OrbitTheme.accent)
+            }
+            .padding(14)
+            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.10), lineWidth: 1))
         }
     }
 }

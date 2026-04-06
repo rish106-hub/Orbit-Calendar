@@ -42,7 +42,7 @@ struct RootView: View {
         .alert(
             "Orbit Error",
             isPresented: Binding(
-                get: { appState.errorMessage != nil },
+                get: { appState.errorMessage != nil && appState.profile != nil },
                 set: { newValue in
                     if !newValue {
                         appState.errorMessage = nil

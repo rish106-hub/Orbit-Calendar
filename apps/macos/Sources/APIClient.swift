@@ -2,12 +2,18 @@ import Foundation
 
 enum APIError: Error, LocalizedError {
     case invalidResponse
+    case invalidRequest(String)
+    case serviceUnavailable(String)
     case serverError(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
             return "The server response was invalid."
+        case .invalidRequest(let message):
+            return message
+        case .serviceUnavailable(let message):
+            return message
         case .serverError(let message):
             return message
         }
@@ -108,6 +114,10 @@ struct APIClient {
         try await request(path: "/api/auth/login", method: "POST", body: LoginBody(email: email, password: password))
     }
 
+    func fetchAuthStatus() async throws -> AuthStatusResponse {
+        try await request(path: "/api/auth/status", method: "GET")
+    }
+
     func logout(token: String) async throws {
         let _: EmptyResponse = try await request(path: "/api/auth/logout", method: "POST", token: token)
     }
@@ -133,15 +143,11 @@ struct APIClient {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await execute(request)
         guard let http = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-
-        guard (200..<300).contains(http.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "Request failed."
-            throw APIError.serverError(message)
-        }
+        try validate(http: http, data: data)
 
         return try decoder.decode(T.self, from: data)
     }
@@ -152,15 +158,11 @@ struct APIClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await execute(request)
         guard let http = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-
-        guard (200..<300).contains(http.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "Request failed."
-            throw APIError.serverError(message)
-        }
+        try validate(http: http, data: data)
 
         if T.self == EmptyResponse.self {
             return EmptyResponse() as! T
@@ -178,15 +180,11 @@ struct APIClient {
             request.httpBody = try encoder.encode(body)
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await execute(request)
         guard let http = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-
-        guard (200..<300).contains(http.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "Request failed."
-            throw APIError.serverError(message)
-        }
+        try validate(http: http, data: data)
 
         if T.self == EmptyResponse.self {
             return EmptyResponse() as! T
@@ -205,15 +203,11 @@ struct APIClient {
             request.httpBody = try encoder.encode(body)
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await execute(request)
         guard let http = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-
-        guard (200..<300).contains(http.statusCode) else {
-            let message = String(data: data, encoding: .utf8) ?? "Request failed."
-            throw APIError.serverError(message)
-        }
+        try validate(http: http, data: data)
 
         if T.self == EmptyResponse.self {
             return EmptyResponse() as! T
@@ -225,9 +219,52 @@ struct APIClient {
     private func isoString(_ date: Date) -> String {
         ISO8601DateFormatter().string(from: date)
     }
+
+    private func execute(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        do {
+            return try await URLSession.shared.data(for: request)
+        } catch {
+            throw APIError.serviceUnavailable("Orbit could not reach the API. Check that the backend is running and the database is reachable.")
+        }
+    }
+
+    private func validate(http: HTTPURLResponse, data: Data) throws {
+        guard (200..<300).contains(http.statusCode) else {
+            let message = decodeErrorMessage(from: data) ?? "Request failed."
+            if [400, 401, 409, 422].contains(http.statusCode) {
+                throw APIError.invalidRequest(message)
+            }
+            if http.statusCode == 503 {
+                throw APIError.serviceUnavailable(message)
+            }
+            throw APIError.serverError(message)
+        }
+    }
+
+    private func decodeErrorMessage(from data: Data) -> String? {
+        if let payload = try? decoder.decode(ErrorPayload.self, from: data) {
+            return payload.detail
+        }
+        return String(data: data, encoding: .utf8)
+    }
 }
 
 struct EmptyResponse: Decodable {}
+struct AuthStatusResponse: Decodable {
+    let authMode: String
+    let calendarProvider: String
+    let databaseReady: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case authMode = "auth_mode"
+        case calendarProvider = "calendar_provider"
+        case databaseReady = "database_ready"
+    }
+}
+
+private struct ErrorPayload: Decodable {
+    let detail: String
+}
 
 private struct SyncRequestBody: Encodable {
     let start: String

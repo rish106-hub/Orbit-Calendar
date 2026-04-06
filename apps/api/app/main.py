@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
+from app.db.session import SessionLocal
 from app.routes.auth import router as auth_router
 from app.routes.agent import router as agent_router
 from app.routes.booking import router as booking_router
@@ -26,5 +29,11 @@ app.include_router(booking_router, prefix="/api")
 
 
 @app.get("/health")
-def healthcheck() -> dict[str, str]:
-    return {"status": "ok", "service": "orbit-api"}
+def healthcheck() -> dict[str, object]:
+    database = "ok"
+    try:
+        with SessionLocal() as db:
+            db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        database = "degraded"
+    return {"status": "ok", "service": "orbit-api", "database": database}

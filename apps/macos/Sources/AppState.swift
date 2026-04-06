@@ -14,6 +14,12 @@ enum AuthMode: String {
     case signup
 }
 
+enum AuthServiceState {
+    case checking
+    case ready
+    case degraded(String)
+}
+
 struct UserProfile: Codable {
     let id: UUID
     let email: String
@@ -170,6 +176,7 @@ final class AppState {
     var authDisplayName = ""
     var authTimezone = TimeZone.current.identifier
     var authToken: String?
+    var authServiceState: AuthServiceState = .checking
 
     private let apiClient: APIClient
     private let authStorageKey = "orbit_auth_token"
@@ -181,6 +188,7 @@ final class AppState {
     }
 
     func bootstrap() async {
+        await refreshAuthServiceStatus()
         guard profile == nil, let token = authToken else { return }
 
         isLoading = true
@@ -196,6 +204,20 @@ final class AppState {
         } catch {
             clearSession()
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshAuthServiceStatus() async {
+        authServiceState = .checking
+        do {
+            let status = try await apiClient.fetchAuthStatus()
+            if status.databaseReady {
+                authServiceState = .ready
+            } else {
+                authServiceState = .degraded("Orbit can reach the API, but the database is degraded.")
+            }
+        } catch {
+            authServiceState = .degraded(error.localizedDescription)
         }
     }
 
@@ -262,6 +284,33 @@ final class AppState {
     }
 
     func submitAuth() async {
+        errorMessage = nil
+        let trimmedEmail = authEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDisplayName = authDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTimezone = authTimezone.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard trimmedEmail.contains("@") else {
+            errorMessage = "Enter a valid email address."
+            return
+        }
+
+        guard authPassword.count >= 8 else {
+            errorMessage = "Password must be at least 8 characters."
+            return
+        }
+
+        if authMode == .signup {
+            guard !trimmedDisplayName.isEmpty else {
+                errorMessage = "Display name is required."
+                return
+            }
+
+            guard !trimmedTimezone.isEmpty else {
+                errorMessage = "Timezone is required."
+                return
+            }
+        }
+
         isLoading = true
         defer { isLoading = false }
 
@@ -269,25 +318,28 @@ final class AppState {
             let response: AuthResponse
             switch authMode {
             case .login:
-                response = try await apiClient.login(email: authEmail, password: authPassword)
+                response = try await apiClient.login(email: trimmedEmail, password: authPassword)
             case .signup:
                 response = try await apiClient.signup(
-                    email: authEmail,
+                    email: trimmedEmail,
                     password: authPassword,
-                    displayName: authDisplayName,
-                    defaultTimezone: authTimezone
+                    displayName: trimmedDisplayName,
+                    defaultTimezone: trimmedTimezone
                 )
             }
 
             authToken = response.token
             UserDefaults.standard.set(response.token, forKey: authStorageKey)
             profile = response.user
+            authServiceState = .ready
             _ = try await apiClient.syncSampleCalendar(token: response.token)
             try await refreshEvents(token: response.token)
             bookingPage = try await apiClient.fetchBookingPage(token: response.token)
+            authEmail = trimmedEmail
             authPassword = ""
         } catch {
             errorMessage = error.localizedDescription
+            await refreshAuthServiceStatus()
         }
     }
 
