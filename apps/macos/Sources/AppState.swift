@@ -181,9 +181,14 @@ final class AppState {
     private let apiClient: APIClient
     private let authStorageKey = "orbit_auth_token"
 
-    init(apiBaseURL: URL = URL(string: "http://localhost:8000")!) {
-        self.apiBaseURL = apiBaseURL
-        self.apiClient = APIClient(baseURL: apiBaseURL)
+    init(apiBaseURL: URL? = nil) {
+        let configuredURL =
+            apiBaseURL
+            ?? ProcessInfo.processInfo.environment["ORBIT_API_BASE_URL"].flatMap(URL.init(string:))
+            ?? URL(string: "http://127.0.0.1:8001")!
+
+        self.apiBaseURL = configuredURL
+        self.apiClient = APIClient(baseURL: configuredURL)
         self.authToken = UserDefaults.standard.string(forKey: authStorageKey)
     }
 
