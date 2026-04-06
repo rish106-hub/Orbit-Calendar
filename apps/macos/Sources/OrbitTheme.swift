@@ -11,6 +11,7 @@ enum OrbitTheme {
 
     static let panelFill = Color.white.opacity(0.14)
     static let panelStrong = Color.white.opacity(0.18)
+    static let panelSoft = Color.white.opacity(0.10)
     static let panelBorder = Color.white.opacity(0.26)
     static let divider = Color.white.opacity(0.12)
     static let textPrimary = Color.white.opacity(0.95)
@@ -46,5 +47,26 @@ struct OrbitGlassCard: ViewModifier {
 extension View {
     func orbitGlassCard(radius: CGFloat = 28, fill: Color = OrbitTheme.panelFill, stroke: Color = OrbitTheme.panelBorder) -> some View {
         modifier(OrbitGlassCard(radius: radius, fill: fill, stroke: stroke))
+    }
+}
+
+struct OrbitInlineField: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(OrbitTheme.panelSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+            )
+            .foregroundStyle(OrbitTheme.textPrimary)
+    }
+}
+
+extension View {
+    func orbitInlineField() -> some View {
+        modifier(OrbitInlineField())
     }
 }

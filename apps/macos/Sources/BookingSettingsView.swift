@@ -27,18 +27,79 @@ struct BookingSettingsView: View {
 
             if let bookingPage = appState.bookingPage {
                 HStack(alignment: .top, spacing: 20) {
-                    Form {
-                        TextField("Slug", text: binding(\.slug))
-                        TextField("Title", text: binding(\.title))
-                        Toggle("Active", isOn: binding(\.active))
-                        Stepper("Duration: \(bookingPage.defaultDurationMinutes) min", value: binding(\.defaultDurationMinutes), in: 15...180, step: 15)
-                        Stepper("Buffer before: \(bookingPage.bufferBeforeMinutes) min", value: binding(\.bufferBeforeMinutes), in: 0...120, step: 5)
-                        Stepper("Buffer after: \(bookingPage.bufferAfterMinutes) min", value: binding(\.bufferAfterMinutes), in: 0...120, step: 5)
-                        Stepper("Minimum notice: \(bookingPage.minimumNoticeMinutes) min", value: binding(\.minimumNoticeMinutes), in: 0...10080, step: 15)
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Booking Rules")
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundStyle(OrbitTheme.textPrimary)
+                        Text("Tune the public link without leaving the desktop workspace.")
+                            .foregroundStyle(OrbitTheme.textSecondary)
+
+                        Rectangle()
+                            .fill(OrbitTheme.divider)
+                            .frame(height: 1)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            fieldLabel("Slug")
+                            TextField("Slug", text: binding(\.slug))
+                                .orbitInlineField()
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            fieldLabel("Title")
+                            TextField("Title", text: binding(\.title))
+                                .orbitInlineField()
+                        }
+
+                        Toggle(isOn: binding(\.active)) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Booking page active")
+                                    .foregroundStyle(OrbitTheme.textPrimary)
+                                Text("Turn the public page on or off without deleting settings.")
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundStyle(OrbitTheme.textSecondary)
+                            }
+                        }
+                        .toggleStyle(.switch)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(OrbitTheme.panelSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                        )
+
+                        valueStepper(
+                            title: "Meeting length",
+                            valueText: "\(bookingPage.defaultDurationMinutes) min",
+                            binding: binding(\.defaultDurationMinutes),
+                            range: 15...180,
+                            step: 15
+                        )
+                        valueStepper(
+                            title: "Buffer before",
+                            valueText: "\(bookingPage.bufferBeforeMinutes) min",
+                            binding: binding(\.bufferBeforeMinutes),
+                            range: 0...120,
+                            step: 5
+                        )
+                        valueStepper(
+                            title: "Buffer after",
+                            valueText: "\(bookingPage.bufferAfterMinutes) min",
+                            binding: binding(\.bufferAfterMinutes),
+                            range: 0...120,
+                            step: 5
+                        )
+                        valueStepper(
+                            title: "Minimum notice",
+                            valueText: "\(bookingPage.minimumNoticeMinutes) min",
+                            binding: binding(\.minimumNoticeMinutes),
+                            range: 0...10080,
+                            step: 15
+                        )
                     }
-                    .formStyle(.grouped)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
+                    .padding(22)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .orbitGlassCard(radius: 24, fill: OrbitTheme.panelStrong)
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Preview")
@@ -92,6 +153,41 @@ struct BookingSettingsView: View {
         Binding(
             get: { appState.bookingPage![keyPath: keyPath] },
             set: { appState.bookingPage![keyPath: keyPath] = $0 }
+        )
+    }
+
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12, weight: .medium, design: .rounded))
+            .foregroundStyle(OrbitTheme.textMuted)
+    }
+
+    private func valueStepper(
+        title: String,
+        valueText: String,
+        binding: Binding<Int>,
+        range: ClosedRange<Int>,
+        step: Int
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(title)
+                    .foregroundStyle(OrbitTheme.textSecondary)
+                Spacer()
+                Text(valueText)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(OrbitTheme.textPrimary)
+            }
+
+            Stepper("", value: binding, in: range, step: step)
+                .labelsHidden()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(OrbitTheme.panelSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
         )
     }
 
