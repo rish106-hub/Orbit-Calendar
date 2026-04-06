@@ -160,7 +160,7 @@ struct AuthResponse: Codable {
 @MainActor
 @Observable
 final class AppState {
-    let apiBaseURL: URL
+    var apiBaseURL: URL
     var selectedSection: AppSection = .calendar
     var profile: UserProfile?
     var events: [CalendarEvent] = []
@@ -177,18 +177,22 @@ final class AppState {
     var authTimezone = TimeZone.current.identifier
     var authToken: String?
     var authServiceState: AuthServiceState = .checking
+    var apiBaseURLInput = ""
 
-    private let apiClient: APIClient
+    private var apiClient: APIClient
     private let authStorageKey = "orbit_auth_token"
+    private let apiBaseURLStorageKey = "orbit_api_base_url"
 
     init(apiBaseURL: URL? = nil) {
         let configuredURL =
             apiBaseURL
             ?? ProcessInfo.processInfo.environment["ORBIT_API_BASE_URL"].flatMap(URL.init(string:))
+            ?? UserDefaults.standard.string(forKey: apiBaseURLStorageKey).flatMap(URL.init(string:))
             ?? URL(string: "http://127.0.0.1:8001")!
 
         self.apiBaseURL = configuredURL
         self.apiClient = APIClient(baseURL: configuredURL)
+        self.apiBaseURLInput = configuredURL.absoluteString
         self.authToken = UserDefaults.standard.string(forKey: authStorageKey)
     }
 
@@ -224,6 +228,20 @@ final class AppState {
         } catch {
             authServiceState = .degraded(error.localizedDescription)
         }
+    }
+
+    func applyAPIBaseURL() async {
+        let trimmed = apiBaseURLInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed), url.scheme != nil, url.host != nil else {
+            errorMessage = "Enter a valid backend URL, for example http://127.0.0.1:8001 or https://api.example.com."
+            return
+        }
+
+        apiBaseURL = url
+        apiClient = APIClient(baseURL: url)
+        UserDefaults.standard.set(url.absoluteString, forKey: apiBaseURLStorageKey)
+        clearSession(keepAPIBaseURL: true)
+        await refreshAuthServiceStatus()
     }
 
     func refreshEvents(token: String? = nil) async throws {
@@ -359,6 +377,10 @@ final class AppState {
     }
 
     private func clearSession() {
+        clearSession(keepAPIBaseURL: false)
+    }
+
+    private func clearSession(keepAPIBaseURL: Bool) {
         authToken = nil
         profile = nil
         events = []
@@ -366,6 +388,9 @@ final class AppState {
         latestAgentResponse = nil
         pendingAction = nil
         UserDefaults.standard.removeObject(forKey: authStorageKey)
+        if !keepAPIBaseURL {
+            apiBaseURLInput = apiBaseURL.absoluteString
+        }
     }
 
     private func requireToken(_ token: String? = nil) throws -> String {
