@@ -1,7 +1,15 @@
 import SwiftUI
 
+private enum AuthField: Hashable {
+    case email
+    case password
+    case displayName
+    case timezone
+}
+
 struct AuthView: View {
     @Environment(AppState.self) private var appState
+    @FocusState private var focusedField: AuthField?
 
     var body: some View {
         HStack(spacing: 28) {
@@ -43,28 +51,36 @@ struct AuthView: View {
                 field("Email", text: Binding(
                     get: { appState.authEmail },
                     set: { appState.authEmail = $0 }
-                ))
+                ), field: .email)
 
-                SecureField("Password", text: Binding(
-                    get: { appState.authPassword },
-                    set: { appState.authPassword = $0 }
-                ))
-                .textFieldStyle(.plain)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.10), lineWidth: 1))
-                .foregroundStyle(OrbitTheme.textPrimary)
+                SecureField(
+                    "",
+                    text: Binding(
+                        get: { appState.authPassword },
+                        set: { appState.authPassword = $0 }
+                    ),
+                    prompt: Text("Password").foregroundStyle(OrbitTheme.textMuted)
+                )
+                .focused($focusedField, equals: .password)
+                .orbitInlineField()
+                .onSubmit {
+                    if appState.authMode == .signup {
+                        focusedField = .displayName
+                    } else {
+                        Task { await appState.submitAuth() }
+                    }
+                }
 
                 if appState.authMode == .signup {
                     field("Display name", text: Binding(
                         get: { appState.authDisplayName },
                         set: { appState.authDisplayName = $0 }
-                    ))
+                    ), field: .displayName)
+
                     field("Timezone", text: Binding(
                         get: { appState.authTimezone },
                         set: { appState.authTimezone = $0 }
-                    ))
+                    ), field: .timezone)
                 }
 
                 Button(appState.authMode == .login ? "Log In" : "Create Account") {
@@ -87,16 +103,38 @@ struct AuthView: View {
             .padding(30)
             .orbitGlassCard(radius: 30, fill: OrbitTheme.panelFill)
         }
+        .onAppear {
+            focusedField = .email
+        }
+        .onChange(of: appState.authMode) { _, _ in
+            focusedField = .email
+        }
     }
 
-    private func field(_ placeholder: String, text: Binding<String>) -> some View {
-        TextField(placeholder, text: text)
-            .textFieldStyle(.plain)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.10), lineWidth: 1))
-            .foregroundStyle(OrbitTheme.textPrimary)
+    private func field(_ placeholder: String, text: Binding<String>, field: AuthField) -> some View {
+        TextField(
+            "",
+            text: text,
+            prompt: Text(placeholder).foregroundStyle(OrbitTheme.textMuted)
+        )
+        .focused($focusedField, equals: field)
+        .orbitInlineField()
+        .onSubmit {
+            switch field {
+            case .email:
+                focusedField = .password
+            case .password:
+                if appState.authMode == .signup {
+                    focusedField = .displayName
+                } else {
+                    Task { await appState.submitAuth() }
+                }
+            case .displayName:
+                focusedField = .timezone
+            case .timezone:
+                Task { await appState.submitAuth() }
+            }
+        }
     }
 
     private func authPoint(_ text: String) -> some View {

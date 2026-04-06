@@ -54,14 +54,17 @@ struct OrbitInlineField: ViewModifier {
     func body(content: Content) -> some View {
         content
             .textFieldStyle(.plain)
+            .font(.system(size: 14, weight: .medium, design: .rounded))
+            .foregroundColor(OrbitTheme.textPrimary)
+            .tint(OrbitTheme.accentStrong)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(OrbitTheme.panelSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                    .allowsHitTesting(false)
             )
-            .foregroundStyle(OrbitTheme.textPrimary)
     }
 }
 
