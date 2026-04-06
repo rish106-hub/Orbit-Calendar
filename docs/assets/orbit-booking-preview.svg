@@ -1,0 +1,46 @@
+<svg width="1600" height="960" viewBox="0 0 1600 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="60" x2="1480" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A1B3E"/>
+      <stop offset="0.55" stop-color="#154B90"/>
+      <stop offset="1" stop-color="#317DCC"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="960" fill="url(#bg)"/>
+  <circle cx="1240" cy="160" r="230" fill="#B9DBFF" fill-opacity="0.18"/>
+  <circle cx="220" cy="820" r="260" fill="#A5D3FF" fill-opacity="0.15"/>
+
+  <rect x="84" y="90" width="1432" height="780" rx="34" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.16)"/>
+  <text x="132" y="154" fill="white" font-size="46" font-family="SF Pro Display, Arial" font-weight="600">Booking Link</text>
+  <text x="132" y="194" fill="rgba(255,255,255,0.74)" font-size="22" font-family="SF Pro Display, Arial">One public link for the MVP, with buffers and notice controls.</text>
+
+  <rect x="1184" y="118" width="220" height="42" rx="18" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.10)"/>
+  <text x="1226" y="145" fill="white" font-size="16" font-family="SF Pro Display, Arial">orbit.app/orbit-qa</text>
+
+  <rect x="132" y="250" width="888" height="508" rx="28" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.12)"/>
+  <rect x="170" y="292" width="812" height="68" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="198" y="335" fill="rgba(255,255,255,0.72)" font-size="22" font-family="SF Pro Display, Arial">Slug</text>
+  <rect x="170" y="382" width="812" height="68" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="198" y="425" fill="rgba(255,255,255,0.72)" font-size="22" font-family="SF Pro Display, Arial">Title</text>
+  <rect x="170" y="472" width="812" height="68" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="198" y="515" fill="rgba(255,255,255,0.72)" font-size="22" font-family="SF Pro Display, Arial">Duration: 30 min</text>
+  <rect x="170" y="562" width="812" height="68" rx="18" fill="rgba(255,255,255,0.08)"/>
+  <text x="198" y="605" fill="rgba(255,255,255,0.72)" font-size="22" font-family="SF Pro Display, Arial">Minimum notice: 60 min</text>
+  <rect x="856" y="694" width="126" height="48" rx="18" fill="#4FA0FF"/>
+  <text x="900" y="724" fill="white" font-size="18" font-family="SF Pro Display, Arial" font-weight="600">Save</text>
+
+  <rect x="1060" y="250" width="380" height="508" rx="28" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.14)"/>
+  <text x="1096" y="306" fill="white" font-size="28" font-family="SF Pro Display, Arial" font-weight="600">Preview</text>
+  <text x="1096" y="362" fill="white" font-size="38" font-family="SF Pro Display, Arial" font-weight="600">Orbit Intro Meeting</text>
+  <text x="1096" y="408" fill="rgba(255,255,255,0.72)" font-size="20" font-family="SF Pro Display, Arial">30-second booking should feel predictable and low-friction.</text>
+
+  <line x1="1096" y1="456" x2="1404" y2="456" stroke="rgba(255,255,255,0.10)"/>
+  <text x="1096" y="520" fill="rgba(255,255,255,0.68)" font-size="18" font-family="SF Pro Display, Arial">Slug</text>
+  <text x="1326" y="520" fill="white" font-size="18" font-family="SF Pro Display, Arial">orbit-qa</text>
+  <text x="1096" y="570" fill="rgba(255,255,255,0.68)" font-size="18" font-family="SF Pro Display, Arial">Duration</text>
+  <text x="1326" y="570" fill="white" font-size="18" font-family="SF Pro Display, Arial">30 min</text>
+  <text x="1096" y="620" fill="rgba(255,255,255,0.68)" font-size="18" font-family="SF Pro Display, Arial">Before buffer</text>
+  <text x="1326" y="620" fill="white" font-size="18" font-family="SF Pro Display, Arial">0 min</text>
+  <text x="1096" y="670" fill="rgba(255,255,255,0.68)" font-size="18" font-family="SF Pro Display, Arial">After buffer</text>
+  <text x="1326" y="670" fill="white" font-size="18" font-family="SF Pro Display, Arial">0 min</text>
+</svg>

@@ -3,6 +3,8 @@ node_modules/
 dist/
 build/
 .build/
+.swiftpm/
+DerivedData/
 .venv/
 __pycache__/
 *.pyc
@@ -11,3 +13,8 @@ __pycache__/
 *.dmg
 apps/macos/.swiftpm/
 apps/macos/dist/
+*.xcresult
+*.xcuserstate
+xcuserdata/
+.idea/
+.vscode/

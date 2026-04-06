@@ -12,6 +12,20 @@ Instead of behaving like a passive calendar viewer, Orbit is designed to help a 
 
 The current build ships as a local-auth MVP with a native SwiftUI macOS client, a FastAPI backend, PostgreSQL persistence, an agent/action layer, and an unsigned local `.dmg` packaging flow.
 
+## Screenshots
+
+### Auth
+
+![Orbit auth preview](docs/assets/orbit-auth-preview.svg)
+
+### Calendar workspace
+
+![Orbit calendar preview](docs/assets/orbit-calendar-preview.svg)
+
+### Booking configuration
+
+![Orbit booking preview](docs/assets/orbit-booking-preview.svg)
+
 ## Product Summary
 
 North star:
@@ -237,6 +251,30 @@ Generated artifacts:
 - `apps/macos/dist/Orbit Calendar.app`
 - `apps/macos/dist/Orbit-Calendar.dmg`
 
+## Release / Install
+
+Current release format:
+
+- unsigned local `.dmg`
+
+Install flow:
+
+1. Build the DMG with `./scripts/package_macos_app.sh`
+2. Open `apps/macos/dist/Orbit-Calendar.dmg`
+3. Drag `Orbit Calendar.app` into `Applications` or launch it directly for local testing
+4. Start the backend locally before using the app
+
+First-run note:
+
+- because the current package is unsigned and not notarized, macOS may require an explicit approval path through `System Settings -> Privacy & Security`
+
+Recommended release checklist:
+
+1. build the backend and native app from a clean git state
+2. generate the unsigned `.dmg`
+3. attach the `.dmg` to a GitHub Release
+4. include version notes covering auth, provider mode, and local setup requirements
+
 ## API Surface
 
 ### Auth
@@ -270,6 +308,10 @@ Generated artifacts:
 - the calendar provider seam already exists
 - `local` provider is active now
 - `google` provider is intentionally deferred but can be slotted in later without redesigning the client contract
+
+## License
+
+This project is available under the [MIT License](LICENSE).
 
 ## Docs
 
